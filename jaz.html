@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jaz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #E6E9FF;
+    --ink: #171B4A;
+    --accent: #E8384F;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bg);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10123A;
+      --ink: #E6E9FF;
+      --accent: #FF6B7E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10123A;
+    --ink: #E6E9FF;
+    --accent: #FF6B7E;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body { height: 100%; margin: 0; }
+  body {
+    box-sizing: border-box;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Unbounded", "Arial Black", "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main {
+    box-sizing: border-box;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: clamp(1.25rem, 4vw, 3rem);
+    overflow: hidden;
+  }
+  .hi {
+    margin: 0 0 0.5rem;
+    font-weight: 500;
+    font-size: clamp(1.25rem, 4.5vw, 2.25rem);
+  }
+  h1 { margin: 0; font-size: inherit; font-weight: inherit; }
+  #name {
+    display: block;
+    margin: 0;
+    padding: 0 0 0.04em;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-family: inherit;
+    font-weight: 800;
+    font-size: clamp(6rem, 36vw, 30rem);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #name:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 0.06em;
+  }
+  .l {
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .l.live { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <p class="hi">Hi, I’m</p>
+  <h1>
+    <button id="name" type="button" aria-label="Jaz. Activate to replay the animation.">
+      <span class="l" data-c="J" aria-hidden="true">J</span><span class="l" data-c="a" aria-hidden="true">a</span><span class="l" data-c="z" aria-hidden="true">z</span>
+    </button>
+  </h1>
+</main>
+<script>
+(function () {
+  var btn = document.getElementById('name');
+  var letters = Array.prototype.slice.call(btn.querySelectorAll('.l'));
+  var glyphs = 'abcdefghkmnoprsuvwxy#%&*+=?';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var running = false;
+
+  function measure() {
+    var size = parseFloat(getComputedStyle(btn).fontSize) || 16;
+    letters.forEach(function (s) { s.style.width = ''; s.textContent = s.getAttribute('data-c'); });
+    letters.forEach(function (s) {
+      s.style.width = (s.getBoundingClientRect().width / size) + 'em';
+    });
+  }
+
+  function play() {
+    if (reduce || running) return;
+    running = true;
+    var start = performance.now();
+    var settleAt = [700, 1050, 1400];
+    var lastTick = 0;
+    function frame(now) {
+      var t = now - start;
+      var done = true;
+      if (now - lastTick > 55) {
+        lastTick = now;
+        letters.forEach(function (s, i) {
+          if (t < settleAt[i]) {
+            done = false;
+            s.classList.add('live');
+            s.textContent = glyphs.charAt(Math.floor(Math.random() * glyphs.length));
+          } else {
+            s.classList.remove('live');
+            s.textContent = s.getAttribute('data-c');
+          }
+        });
+      } else {
+        done = t >= settleAt[settleAt.length - 1];
+      }
+      if (!done) { requestAnimationFrame(frame); }
+      else {
+        letters.forEach(function (s) { s.classList.remove('live'); s.textContent = s.getAttribute('data-c'); });
+        running = false;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function begin() {
+    try { measure(); } catch (e) {}
+    btn.style.visibility = '';
+    play();
+  }
+
+  btn.addEventListener('click', play);
+
+  if (!reduce) { btn.style.visibility = 'hidden'; }
+  var loaded = (document.fonts && document.fonts.load)
+    ? Promise.race([
+        document.fonts.load('800 1em Unbounded', 'Jaz'),
+        new Promise(function (r) { setTimeout(r, 1500); })
+      ])
+    : Promise.resolve();
+  loaded.then(begin, begin);
+})();
+</script>
+</body>
+</html>
